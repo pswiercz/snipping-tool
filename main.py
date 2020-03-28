@@ -2,22 +2,25 @@ import sys
 import random
 import time
 import numpy as np
-from PIL.ImageQt import ImageQt
+from PIL import ImageQt
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
-import make_screenshot
-from screeninfo import get_monitors
 
-from desktopmagic.screengrab_win32 import getDisplaysAsImages
+import gi
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gdk
+
+import make_screenshot
 
 
 class Main_Menu(QtWidgets.QWidget):
     DELAY_TIMES = ['None', '1s', '2s', '3s', '4s', '5s', '10s']
     INSTANCES = []
+    # MONITORS_INFO = []
     def __init__(self):
         super().__init__()
-        self.monitors_info()
+        # self.monitors_info()
         self.UI()
 
     def UI(self):   
@@ -34,66 +37,42 @@ class Main_Menu(QtWidgets.QWidget):
 
         self.setLayout(self.layout)
 
-    def monitors_info(self):
-        self.monitors_resolution = []
-        for i, monitor_data in enumerate(get_monitors()):
-            splited = str(monitor_data).split(',')
-            monitor = [str(splited[-1].split('DISPLAY')[-1].split("'")[0]),
-                       str(splited[-3].split('=')[-1]),
-                       str(splited[-2].split('=')[-1])]
-                        
-            self.monitors_resolution.append(monitor)
+    def make_shots(self):
+        self.monitors_data = []
+        self.shots = []
+
+        display = Gdk.Display.get_default()
+        num_monitors = display.get_n_monitors()
+
+        for i in range(0, num_monitors):
+            monitor = display.get_monitor(i)
+            monitor_rect = monitor.get_geometry()
+
+            window = Gdk.get_default_root_window()
+            self.picture = Gdk.pixbuf_get_from_window(window, 
+                                monitor_rect.x, monitor_rect.y, 
+                                monitor_rect.width, monitor_rect.height)
+
+            self.monitors_data.extend([[self.picture, monitor_rect.width, monitor_rect.height, monitor_rect.x]])
+
+        return self.monitors_data
 
     def new_snipping_windows(self):
-        # self.close()
-
         if self.delay_combo.currentText() == 'None':
             time.sleep(0.3)
-            # print("none")
-        else:
+        else:   
             time.sleep(int(self.delay_combo.currentText()[:-1]))
         
+        self.monitors_data = self.make_shots()
 
-        # TODO: place to take printscreen
-        self.shots = []
-        for displayNumber, im in enumerate(getDisplaysAsImages(), 1):
-            # im.save(f'picures/_{displayNumber}.png', format='png')
-            # im.show()
-            # self.qim = ImageQt(im)
-            # self.shots.append(self.qim)
-            self.shots.append(im)
-            # print(im)
-            # if displayNumber == 1:
-            #     break
-        # print(self.shots)
-        # pictures[0].show()
+        for i, self.monitor_data in enumerate(self.monitors_data):
 
-        [Main_Menu.INSTANCES.append(make_screenshot.MainWindow(
-                                    monitor_number=self.monitors_resolution[i][0], #ScreenshotWidget
-                                    screen_width=self.monitors_resolution[i][1], 
-                                    screen_height=self.monitors_resolution[i][2],
-                                    shot=self.shots[i]),)
-                                    for i, monitor in enumerate(self.monitors_resolution)]
-        # print(Main_Menu.INSTANCES)
-
-        # self.close() #test
-
-        # self.make_screenshot_instance = []
-        # [self.make_screenshot_instance.append(make_screenshot.MainWindow(
-        #                             monitor_number=self.monitors_resolution[i][0], #ScreenshotWidget
-        #                             screen_width=self.monitors_resolution[i][1], 
-        #                             screen_height=self.monitors_resolution[i][2],
-        #                             shot=self.shots[i]),)
-        #                             for i, monitor in enumerate(self.monitors_resolution)]
-        # print(self.make_screenshot_instance)
-
-        # self.monitor = 0
-        # self.make_screenshot_instance.append(make_screenshot.MainWindow(
-        #                             monitor_number=self.monitors_resolution[self.monitor][0], #ScreenshotWidget
-        #                             screen_width=self.monitors_resolution[self.monitor][1], 
-        #                             screen_height=self.monitors_resolution[self.monitor][2],
-        #                             shot=self.shots[self.monitor]))
-
+            Main_Menu.INSTANCES.append(make_screenshot.MainWindow(
+                                                                monitor_number=i, #ScreenshotWidget
+                                                                picture=self.monitor_data[0],
+                                                                screen_width=self.monitor_data[1], 
+                                                                screen_height=self.monitor_data[2],
+                                                                x_move=self.monitor_data[3]))
 
 if __name__ == "__main__":
 
@@ -102,6 +81,6 @@ if __name__ == "__main__":
     widget = Main_Menu()
     widget.resize(300, 200)
     widget.show()
-    print(widget.INSTANCES)
+    # print(widget.INSTANCES)
 
     sys.exit(app.exec_())
