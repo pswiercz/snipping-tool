@@ -16,11 +16,10 @@ import make_screenshot
 
 class Main_Menu(QtWidgets.QWidget):
     DELAY_TIMES = ['None', '1s', '2s', '3s', '4s', '5s', '10s']
-    INSTANCES = []
+
     # MONITORS_INFO = []
     def __init__(self):
         super().__init__()
-        # self.monitors_info()
         self.UI()
 
     def UI(self):   
@@ -39,7 +38,6 @@ class Main_Menu(QtWidgets.QWidget):
 
     def make_shots(self):
         self.monitors_data = []
-        self.shots = []
 
         display = Gdk.Display.get_default()
         num_monitors = display.get_n_monitors()
@@ -58,29 +56,30 @@ class Main_Menu(QtWidgets.QWidget):
         return self.monitors_data
 
     def new_snipping_windows(self):
+        self.instances = []  
+        self.close()
         if self.delay_combo.currentText() == 'None':
             time.sleep(0.3)
         else:   
             time.sleep(int(self.delay_combo.currentText()[:-1]))
-        
+
         self.monitors_data = self.make_shots()
 
         for i, self.monitor_data in enumerate(self.monitors_data):
-
-            Main_Menu.INSTANCES.append(make_screenshot.MainWindow(
-                                                                monitor_number=i, #ScreenshotWidget
+            self.instances.append(make_screenshot.MainWindow(monitor_number=i,
                                                                 picture=self.monitor_data[0],
                                                                 screen_width=self.monitor_data[1], 
                                                                 screen_height=self.monitor_data[2],
                                                                 x_move=self.monitor_data[3]))
 
-if __name__ == "__main__":
+        [self.instances[i].pass_instances(self.instances) for i, _ in enumerate(self.monitors_data)]
 
+
+
+if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     widget = Main_Menu()
     widget.resize(300, 200)
     widget.show()
-    # print(widget.INSTANCES)
-
     sys.exit(app.exec_())

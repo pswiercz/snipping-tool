@@ -7,14 +7,15 @@ from PIL import ImageQt, ImageFilter, ImageEnhance
 # from PIL.ImageQt import ImageQt
 from PyQt5 import QtWidgets, QtCore, QtGui
 # from PyQt5.QtCore import Qt
-# from screeninfo import get_monitors
-# import main 
+
 import gi
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
 from gi.repository import GLib, GdkPixbuf
 from PIL import Image
+
+import main
 
 
 def pixbuf2image(pix):
@@ -30,7 +31,6 @@ def pixbuf2image(pix):
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, monitor_number=None, picture=None, screen_width=None, screen_height=None, x_move=None):
-        # TODO Change monitor variables to *args, maybe
         super().__init__(parent)
 
         self.monitor_number = int(monitor_number)
@@ -39,6 +39,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.screen_height = int(screen_height)
         self.x_move = int(x_move)
 
+    def pass_instances(self, snipp_instances):
+        self.snipp_instances = snipp_instances
         self.starter()
 
     def starter(self):
@@ -67,17 +69,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.show()
 
-    def keyPressEvent(self, event): #q for exit
-        if event.key() == QtCore.Qt.Key_Q:
-            # print('Quit')
-            self.close()
-        event.accept()
+    # def close_instance(self):
+    #     self.close()
+    #     event.accept()
+
+    def keyPressEvent(self, event):
+        pass
 
     def mousePressEvent(self, event):
-        self.start = event.pos()
-        # print(main.widget.INSTANCES)
+        # self.start = event.pos()
+        # from main import Main_Menu
+        # print(Main_Menu.INSTANCES)
         # print(self.start)
         # self.end = self.start
+        # self.close()
+
+        if isinstance(self.snipp_instances, MainWindow):
+            self.snipp_instances.close()
+        else:
+            [instance.close() for instance in self.snipp_instances]
+        
         self.update()
 
     def mouseMoveEvent(self, event):
@@ -117,4 +128,6 @@ if __name__ == "__main__":
                           screen_height=monitor_data[2],
                           x_move=monitor_data[3])
    
+    instance.pass_instances(instance)
+
     sys.exit(app.exec_()) 
