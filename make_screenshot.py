@@ -17,7 +17,6 @@ from PIL import Image
 
 import main
 
-
 def pixbuf2image(pix):
         data = pix.get_pixels()
         w = pix.props.width
@@ -29,7 +28,60 @@ def pixbuf2image(pix):
         im = Image.frombytes(mode, (w, h), data, "raw", mode, stride)
         return im
 
-class MainWindow(QtWidgets.QMainWindow):
+class TransparentMask(QtWidgets.QWidget):
+    def __init__(self, monitor_number=None, screen_width=None, screen_height=None, x_move=None):
+        super().__init__()
+        
+        self.monitor_number = int(monitor_number)
+        self.screen_width = int(screen_width)
+        self.screen_height = int(screen_height)
+        self.x_move = int(x_move)
+
+        self.setGeometry(self.x_move, 0, self.screen_width, self.screen_height)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint) #no title bar
+
+        self.showFullScreen()
+        self.begin = QtCore.QPoint()
+        self.end = QtCore.QPoint()
+        self.setWindowOpacity(0.3)
+        QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+        self.show()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setPen(QtGui.QPen(QtGui.QColor('black'), 3))
+        qp.setBrush(QtGui.QColor("#000000"))
+        qp.drawRect(QtCore.QRect(self.begin, self.end))
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Q:
+            self.close()
+        event.accept()
+
+    def mousePressEvent(self, event):
+        self.begin = event.pos()
+        self.end = self.begin
+        self.update()
+
+    def mouseMoveEvent(self, event):
+        self.end = event.pos()
+        self.update()
+
+    def mouseReleaseEvent(self, event):
+        self.close()
+
+        x1 = min(self.begin.x(), self.end.x())
+        y1 = min(self.begin.y(), self.end.y())
+        x2 = max(self.begin.x(), self.end.x())
+        y2 = max(self.begin.y(), self.end.y())
+
+        instance.close()
+        # close all instances
+
+        # move coordinates and picture to main.py
+
+class PictureBackground(QtWidgets.QMainWindow):
     def __init__(self, parent=None, monitor_number=None, picture=None, screen_width=None, screen_height=None, x_move=None):
         super().__init__(parent)
 
@@ -45,18 +97,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def starter(self):
         self.setGeometry(self.x_move, 0, self.screen_width, self.screen_height)
-        self.begin = QtCore.QPoint()
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint) #no title bar
-        # self.setWindowOpacity(0.3) window transparency
 
         self.showFullScreen()
-
-        # self.picture = self.picture.point(lambda p: p * 0.9)
-        # # ImageFilter.GaussianBlur(radius=2) 
-        # self.picture = self.picture.filter(ImageFilter.GaussianBlur(radius=1))
-        # enhancer = ImageEnhance.Contrast(self.picture)
-        # self.picture = enhancer.enhance(4.0)
 
         self.qimage = ImageQt.ImageQt(self.picture)
 
@@ -65,47 +109,10 @@ class MainWindow(QtWidgets.QMainWindow):
         label.setPixmap(pixmap)
         self.setCentralWidget(label)
 
-        QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
-
         self.show()
-
-    # def close_instance(self):
-    #     self.close()
-    #     event.accept()
-
-    def keyPressEvent(self, event):
-        pass
-
-    def mousePressEvent(self, event):
-        # self.start = event.pos()
-        # from main import Main_Menu
-        # print(Main_Menu.INSTANCES)
-        # print(self.start)
-        # self.end = self.start
-        # self.close()
-
-        if isinstance(self.snipp_instances, MainWindow):
-            self.snipp_instances.close()
-        else:
-            [instance.close() for instance in self.snipp_instances]
-        
-        self.update()
-
-    def mouseMoveEvent(self, event):
-        self.end = event.pos()
-        # print(self.end)
-        self.update()
-
-# class Screenshot_tool(QtWidgets.QWidget):
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-#         QtWidgets.QWidget.__init__(self, parent)
-
-
 
 if __name__ == "__main__":
     monitor_data = []
-    shots = []
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -122,7 +129,7 @@ if __name__ == "__main__":
 
     monitor_data.extend([picture, monitor_rect.width, monitor_rect.height, monitor_rect.x])
 
-    instance = MainWindow(monitor_number=0, #ScreenshotWidget
+    instance = PictureBackground(monitor_number=0,
                           picture=monitor_data[0],
                           screen_width=monitor_data[1], 
                           screen_height=monitor_data[2],
@@ -130,4 +137,15 @@ if __name__ == "__main__":
    
     instance.pass_instances(instance)
 
+    app_mask = QtWidgets.QApplication(sys.argv)
+    mask_instance = TransparentMask(monitor_number=0,
+                          screen_width=monitor_data[1], 
+                          screen_height=monitor_data[2],
+                          x_move=monitor_data[3])
+
+    # instance.show()
+
+    # app_mask.aboutToQuit.connect(app_mask.deleteLater)
+    # app.aboutToQuit.connect(app.deleteLater)
+    app_mask.exit(app_mask.exec_()) 
     sys.exit(app.exec_()) 
