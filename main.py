@@ -17,8 +17,7 @@ import make_screenshot
 class Main_Menu(QtWidgets.QWidget):
     DELAY_TIMES = ['None', '1s', '2s', '3s', '4s', '5s', '10s']
 
-    # MONITORS_INFO = []
-    def __init__(self):
+    def __init__(self, picture=None):
         super().__init__()
         self.UI()
 
@@ -56,7 +55,8 @@ class Main_Menu(QtWidgets.QWidget):
         return self.monitors_data
 
     def new_snipping_windows(self):
-        self.instances = []  
+        self.background_instances = []  
+        self.mask_instances =[]
         self.close()
         if self.delay_combo.currentText() == 'None':
             time.sleep(0.3)
@@ -66,15 +66,20 @@ class Main_Menu(QtWidgets.QWidget):
         self.monitors_data = self.make_shots()
 
         for i, self.monitor_data in enumerate(self.monitors_data):
-            self.instances.append(make_screenshot.MainWindow(monitor_number=i,
-                                                                picture=self.monitor_data[0],
-                                                                screen_width=self.monitor_data[1], 
-                                                                screen_height=self.monitor_data[2],
-                                                                x_move=self.monitor_data[3]))
+            self.background_instances.append(make_screenshot.PictureBackground(monitor_number=i,
+                                                            picture=self.monitor_data[0],
+                                                            screen_width=self.monitor_data[1], 
+                                                            screen_height=self.monitor_data[2],
+                                                            x_move=self.monitor_data[3]))
 
-        [self.instances[i].pass_instances(self.instances) for i, _ in enumerate(self.monitors_data)]
+            self.mask_instances.append(make_screenshot.TransparentMask(monitor_number=i, 
+                                                                    screen_width=self.monitor_data[1], 
+                                                                    screen_height=self.monitor_data[2], 
+                                                                    x_move=self.monitor_data[3]))
 
-
+        [self.mask_instances[i].pass_instances(self.mask_instances, self.background_instances) 
+                                       for i, _
+                                       in enumerate(self.monitors_data)]
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

@@ -15,7 +15,7 @@ from gi.repository import Gdk
 from gi.repository import GLib, GdkPixbuf
 from PIL import Image
 
-import main
+# import main
 
 def pixbuf2image(pix):
         data = pix.get_pixels()
@@ -37,6 +37,12 @@ class TransparentMask(QtWidgets.QWidget):
         self.screen_height = int(screen_height)
         self.x_move = int(x_move)
 
+    def pass_instances(self, mask_instances, background_instances):
+        self.mask_instances = mask_instances
+        self.background_instances = background_instances
+        self.starter()
+
+    def starter(self):
         self.setGeometry(self.x_move, 0, self.screen_width, self.screen_height)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint) #no title bar
@@ -44,14 +50,24 @@ class TransparentMask(QtWidgets.QWidget):
         self.showFullScreen()
         self.begin = QtCore.QPoint()
         self.end = QtCore.QPoint()
-        self.setWindowOpacity(0.3)
+        self.setWindowOpacity(0.2)
         QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
         self.show()
+
+    def close_all(self):
+        if isinstance(self.mask_instances, list):
+            for for_closing in zip(self.mask_instances, self.background_instances):
+                for_closing[0].close()
+                for_closing[1].close()
+        else:
+            self.mask_instances.close()
+            self.background_instances.close()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         qp.setPen(QtGui.QPen(QtGui.QColor('black'), 3))
         qp.setBrush(QtGui.QColor("#000000"))
+        # qp.setBrush(QtGui.QColor.fromHslF(0.9, 0.1, 0.8, 0.2))
         qp.drawRect(QtCore.QRect(self.begin, self.end))
 
     def keyPressEvent(self, event):
@@ -76,10 +92,8 @@ class TransparentMask(QtWidgets.QWidget):
         x2 = max(self.begin.x(), self.end.x())
         y2 = max(self.begin.y(), self.end.y())
 
-        instance.close()
-        # close all instances
-
-        # move coordinates and picture to main.py
+        self.close_all()
+        # TODO create new instance with main, pass already snipped picture 
 
 class PictureBackground(QtWidgets.QMainWindow):
     def __init__(self, parent=None, monitor_number=None, picture=None, screen_width=None, screen_height=None, x_move=None):
@@ -91,19 +105,12 @@ class PictureBackground(QtWidgets.QMainWindow):
         self.screen_height = int(screen_height)
         self.x_move = int(x_move)
 
-    def pass_instances(self, snipp_instances):
-        self.snipp_instances = snipp_instances
-        self.starter()
-
-    def starter(self):
         self.setGeometry(self.x_move, 0, self.screen_width, self.screen_height)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint) #no title bar
-
         self.showFullScreen()
 
         self.qimage = ImageQt.ImageQt(self.picture)
-
         label = QtWidgets.QLabel(self)
         pixmap = QtGui.QPixmap.fromImage(self.qimage)
         label.setPixmap(pixmap)
@@ -135,13 +142,15 @@ if __name__ == "__main__":
                           screen_height=monitor_data[2],
                           x_move=monitor_data[3])
    
-    instance.pass_instances(instance)
+
 
     app_mask = QtWidgets.QApplication(sys.argv)
     mask_instance = TransparentMask(monitor_number=0,
                           screen_width=monitor_data[1], 
                           screen_height=monitor_data[2],
                           x_move=monitor_data[3])
+
+    mask_instance.pass_instances(mask_instance, instance)
 
     # instance.show()
 
