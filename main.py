@@ -14,26 +14,30 @@ from gi.repository import Gdk
 import make_screenshot
 
 
-class Main_Menu(QtWidgets.QWidget):
+class Main_Menu(QtWidgets.QMainWindow):
     DELAY_TIMES = ['None', '1s', '2s', '3s', '4s', '5s', '10s']
 
-    def __init__(self, picture=None):
+    def __init__(self, snipped_pic=None):
         super().__init__()
+        self.snipped_pic = snipped_pic
+
+    def pass_instance(self, m_instance):
+        self.m_instance = m_instance
         self.UI()
 
     def UI(self):   
-        self.layout = QtWidgets.QVBoxLayout()
-
-        self.new_snip = QtWidgets.QPushButton("New") 
-        self.new_snip.clicked.connect(self.new_snipping_windows)
+        self.new_snip_button = QPushButton('new', self)
+        self.new_snip_button.move(0, 0)
+        self.new_snip_button.clicked.connect(self.new_snipping_windows)
 
         self.delay_combo = QComboBox(self)
         self.delay_combo.addItems(Main_Menu.DELAY_TIMES)
+        self.delay_combo.move(120, 0)
 
-        self.layout.addWidget(self.new_snip, 1)
-        self.layout.addWidget(self.delay_combo, 0)
-
-        self.setLayout(self.layout)
+        QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
+        self.setWindowTitle('snippus')
+        self.resize(300, 200)
+        self.show()
 
     def make_shots(self):
         self.monitors_data = []
@@ -66,7 +70,7 @@ class Main_Menu(QtWidgets.QWidget):
         self.monitors_data = self.make_shots()
 
         for i, self.monitor_data in enumerate(self.monitors_data):
-            self.background_instances.append(make_screenshot.PictureBackground(monitor_number=i,
+            self.background_instances.append(make_screenshot.BackgroundPicture(monitor_number=i,
                                                             picture=self.monitor_data[0],
                                                             screen_width=self.monitor_data[1], 
                                                             screen_height=self.monitor_data[2],
@@ -85,6 +89,6 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
 
     widget = Main_Menu()
-    widget.resize(300, 200)
-    widget.show()
+    widget.pass_instance(widget)
+    # widget.show()
     sys.exit(app.exec_())
